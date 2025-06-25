@@ -8,15 +8,20 @@
     "deploy": "sst deploy",
     "remove": "sst remove",
     "typecheck": "tsc --noEmit",
-    "test": "sst shell vitest"
+    "test": "vitest",
+    "graphql-codegen": "graphql-codegen"
   },
   "dependencies": {
+    "@shopify/admin-api-client": "^1.1.0",
+    "graphql": "^16.11.0",
+    "graphql-request": "^7.2.0",
     "hono": "^4.8.2"
   },
   "devDependencies": {
-    "@types/node": "^24.0.4",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@shopify/api-codegen-preset": "^1.1.8",
     "@types/aws-lambda": "^8.10.150",
-    "@tsconfig/node22": "^22.0.0",
+    "@types/node": "^24.0.4",
     "sst": "^3.17.6",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
