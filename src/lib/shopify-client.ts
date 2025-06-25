@@ -1,5 +1,5 @@
 import { createAdminApiClient } from '@shopify/admin-api-client';
-import type { ShopifyClientOptions, QueryCostInfo, ThrottleStatus, OperationResult, BatchOptions, BatchResult,  } from './types';
+import type { ShopifyClientOptions, QueryCostInfo, ThrottleStatus, OperationResult } from './types';
 
 // Rate limiting configuration - unified across all GraphQL operations
 export const RATE_LIMIT_CONFIG = {
@@ -44,7 +44,7 @@ export class ShopifyClient {
 
     const variables = {
       first,
-      after: cursor
+      after: cursor,
     };
 
     const response = await this.client.request(query, { variables });
@@ -54,12 +54,12 @@ export class ShopifyClient {
     }
 
     return {
-      data: response.data.customers.edges.map(edge => edge.node),
+      data: response.data.customers.edges.map((edge) => edge.node),
       pageInfo: {
         hasNextPage: response.data.customers.pageInfo.hasNextPage,
-        endCursor: response.data.customers.pageInfo.endCursor ?? null
+        endCursor: response.data.customers.pageInfo.endCursor ?? null,
       },
-      costInfo: response.extensions?.cost
+      costInfo: response.extensions?.cost,
     };
   }
 
@@ -82,8 +82,8 @@ export class ShopifyClient {
     const variables = {
       input: {
         id: customerId,
-        tags: tags
-      }
+        tags: tags,
+      },
     };
 
     const response = await this.client.request(mutation, { variables });
@@ -104,7 +104,7 @@ export class ShopifyClient {
 
     return {
       customer: customerUpdate.customer,
-      costInfo: response.extensions?.cost
+      costInfo: response.extensions?.cost,
     };
   }
 
@@ -114,53 +114,49 @@ export class ShopifyClient {
       pageInfo: { hasNextPage: boolean; endCursor: string | null };
       costInfo?: QueryCostInfo;
     }>,
-    pageSize: number = 50
   ): Promise<{ items: T[]; totalCost?: { requested: number; actual: number } }> {
     let allItems: T[] = [];
     let hasNextPage = true;
     let cursor: string | null = null;
     let totalRequestedCost = 0;
     let totalActualCost = 0;
-    let pageCount = 0;
-    
+
     while (hasNextPage) {
-      try {
-        const result = await queryFn(cursor);
-        allItems = [...allItems, ...result.data];
-        pageCount++;
-        
-        // Track query cost points information for rate limiting
-        if (result.costInfo) {
-          totalRequestedCost += result.costInfo.requestedQueryCost;
-          totalActualCost += result.costInfo.actualQueryCost;
+      const result = await queryFn(cursor);
+      allItems = [...allItems, ...result.data];
+
+      // Track query cost points information for rate limiting
+      if (result.costInfo) {
+        totalRequestedCost += result.costInfo.requestedQueryCost;
+        totalActualCost += result.costInfo.actualQueryCost;
+      }
+
+      hasNextPage = result.pageInfo.hasNextPage;
+      cursor = result.pageInfo.endCursor;
+
+      if (hasNextPage && result.costInfo) {
+        // Use point cost from this operation to predict next operation cost
+        const expectedCost = result.costInfo.actualQueryCost;
+        const delay = this.calculateRateLimit(result.costInfo.throttleStatus, expectedCost);
+
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
-        
-        hasNextPage = result.pageInfo.hasNextPage;
-        cursor = result.pageInfo.endCursor;
-        
-        if (hasNextPage && result.costInfo) {
-          // Use point cost from this operation to predict next operation cost
-          const expectedCost = result.costInfo.actualQueryCost;
-          const delay = this.calculateRateLimit(result.costInfo.throttleStatus, expectedCost);
-          
-          if (delay > 0) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        } else if (hasNextPage) {
-          // Fallback to conservative delay if no cost info available
-          await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.FALLBACK_DELAY_MS));
-        }
-      } catch (error) {
-        throw error;
+      } else if (hasNextPage) {
+        // Fallback to conservative delay if no cost info available
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_CONFIG.FALLBACK_DELAY_MS));
       }
     }
-    
-    return { 
+
+    return {
       items: allItems,
-      totalCost: totalRequestedCost > 0 ? { 
-        requested: totalRequestedCost, 
-        actual: totalActualCost 
-      } : undefined
+      totalCost:
+        totalRequestedCost > 0
+          ? {
+              requested: totalRequestedCost,
+              actual: totalActualCost,
+            }
+          : undefined,
     };
   }
 
@@ -169,23 +165,23 @@ export class ShopifyClient {
     if (!throttleStatus) {
       return RATE_LIMIT_CONFIG.FALLBACK_DELAY_MS;
     }
-    
+
     const { currentlyAvailable, restoreRate } = throttleStatus;
-    
+
     // Calculate dynamic threshold based on expected cost
     const dynamicThreshold = Math.max(
       expectedCost * RATE_LIMIT_CONFIG.POINTS_BUFFER_MULTIPLIER,
-      RATE_LIMIT_CONFIG.MIN_POINTS_THRESHOLD
+      RATE_LIMIT_CONFIG.MIN_POINTS_THRESHOLD,
     );
-    
+
     // If we don't have enough points for the next operation, wait for capacity
     if (currentlyAvailable < dynamicThreshold) {
       const pointsNeeded = dynamicThreshold - currentlyAvailable;
       const timeNeeded = Math.ceil(pointsNeeded / restoreRate) * 1000;
       return timeNeeded;
     }
-    
-    // If we have enough capacity, probably dont need a delay. 
+
+    // If we have enough capacity, probably dont need a delay.
     return RATE_LIMIT_CONFIG.GOOD_CAPACITY_DELAY_MS;
   }
 
@@ -206,75 +202,71 @@ export class ShopifyClient {
       try {
         const operationResult = await operation(items[i]);
         results.push(operationResult.result);
-        
+
         // Track costs and apply intelligent rate limiting
         if (operationResult.costInfo) {
           totalRequestedCost += operationResult.costInfo.requestedQueryCost;
           totalActualCost += operationResult.costInfo.actualQueryCost;
-          
+
           // Smart rate limiting after each operation (except the last one)
           if (i < items.length - 1) {
             const delay = this.calculateRateLimit(
               operationResult.costInfo.throttleStatus,
-              operationResult.costInfo.actualQueryCost
+              operationResult.costInfo.actualQueryCost,
             );
-            
+
             if (delay > 0) {
-              await new Promise(resolve => setTimeout(resolve, delay));
+              await new Promise((resolve) => setTimeout(resolve, delay));
             }
           }
         }
-        
       } catch (error) {
         const errorMsg = `Operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
         errors.push(errorMsg);
       }
     }
 
-    return { 
-      results, 
+    return {
+      results,
       errors,
-      totalCost: totalRequestedCost > 0 ? { 
-        requested: totalRequestedCost, 
-        actual: totalActualCost 
-      } : undefined
+      totalCost:
+        totalRequestedCost > 0
+          ? {
+              requested: totalRequestedCost,
+              actual: totalActualCost,
+            }
+          : undefined,
     };
   }
 
   async batchUpdateCustomerTags(
-    updates: Array<{id: string, tags: string[]}>,
+    updates: Array<{ id: string; tags: string[] }>,
   ): Promise<{ customersUpdated: number; errors: string[]; totalCost?: { requested: number; actual: number } }> {
     // Use the sequential processor with customer tag update operation
-    const result = await this.processItems(
-      updates,
-      async (update: {id: string, tags: string[]}) => {
-        const updateResult = await this.updateCustomerTags(update.id, update.tags);
-        return {
-          result: updateResult.customer,
-          costInfo: updateResult.costInfo
-        };
-      },
-    );
+    const result = await this.processItems(updates, async (update: { id: string; tags: string[] }) => {
+      const updateResult = await this.updateCustomerTags(update.id, update.tags);
+      return {
+        result: updateResult.customer,
+        costInfo: updateResult.costInfo,
+      };
+    });
 
     return {
       customersUpdated: result.results.length,
       errors: result.errors,
-      totalCost: result.totalCost
+      totalCost: result.totalCost,
     };
   }
 
   async fetchAllCustomers(batchSize: number = 50) {
-    return this.paginateAll(
-      async (cursor) => {
-        const result = await this.fetchCustomers(cursor, batchSize);
-        return {
-          data: result.data,
-          pageInfo: result.pageInfo,
-          costInfo: result.costInfo
-        };
-      },
-      batchSize
-    );
+    return this.paginateAll(async (cursor) => {
+      const result = await this.fetchCustomers(cursor, batchSize);
+      return {
+        data: result.data,
+        pageInfo: result.pageInfo,
+        costInfo: result.costInfo,
+      };
+    });
   }
 }
 

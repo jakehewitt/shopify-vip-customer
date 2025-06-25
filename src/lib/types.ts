@@ -15,16 +15,6 @@ export interface QueryCostInfo {
   throttleStatus: ThrottleStatus;
 }
 
-export interface BatchOptions {
-  batchSize?: number;
-}
-
-export interface BatchResult<T> {
-  results: T[];
-  errors: string[];
-  totalCost?: { requested: number; actual: number };
-}
-
 export interface OperationResult<T> {
   result: T;
   costInfo?: QueryCostInfo;

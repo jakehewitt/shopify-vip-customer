@@ -1,4 +1,4 @@
-import { GetCustomersQuery } from "../generated/admin.generated";
+import { GetCustomersQuery } from '../generated/admin.generated';
 
 export type ShopifyCustomer = GetCustomersQuery['customers']['edges'][0]['node'];
 

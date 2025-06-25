@@ -1,4 +1,4 @@
-import {shopifyApiProject, ApiType} from '@shopify/api-codegen-preset';
+import { shopifyApiProject, ApiType } from '@shopify/api-codegen-preset';
 
 // Taken from: https://shopify.dev/docs/api/shopify-app-remix/v2/guide-graphql-types
 export default {

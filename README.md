@@ -5,6 +5,7 @@ A collection of serverless functions for Comfrt's business operations, built wit
 ## Current Functions
 
 ### VIP Customer Tagging
+
 Automatically identifies and tags VIP customers in Shopify stores based on their order history.
 
 ## Project Structure
@@ -87,6 +88,7 @@ Copy `.env.example` to `.env` and configure
 Identifies and tags VIP customers based on order count.
 
 **Request:**
+
 ```json
 {
   "shopDomain": "mystore.myshopify.com",
@@ -96,6 +98,7 @@ Identifies and tags VIP customers based on order count.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
