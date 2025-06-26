@@ -5,7 +5,6 @@ export type ShopifyCustomer = GetCustomersQuery['customers']['edges'][0]['node']
 export interface VipIdentificationResult {
   vipCustomers: ShopifyCustomer[];
   totalCustomers: number;
-  processingTime: number; // in milliseconds
 }
 
 export interface VipIdentificationOptions {
@@ -23,7 +22,6 @@ interface TagVipCustomersSummary {
   totalCustomers: number;
   vipsIdentified: number;
   customersUpdated: number;
-  processingTime: string;
 }
 
 export interface TagVipCustomersResponse {

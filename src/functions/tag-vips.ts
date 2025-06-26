@@ -22,18 +22,13 @@ function identifyVipCustomers(
   customers: ShopifyCustomer[],
   options: VipIdentificationOptions = { minOrderCount: VIP_MIN_ORDER_COUNT, dryRun: false },
 ): VipIdentificationResult {
-  const startTime = Date.now();
-
   const vipCustomers = customers.filter(
     (customer) => customer.numberOfOrders >= options.minOrderCount && !customer.tags.includes('VIP'),
   );
 
-  const endTime = Date.now();
-
   return {
     vipCustomers,
     totalCustomers: customers.length,
-    processingTime: endTime - startTime,
   };
 }
 
@@ -95,7 +90,6 @@ app.post('/', async (context) => {
 
     const dryRun = body.dryRun ?? false;
     const batchSize = body.batchSize ?? DEFAULT_BATCH_SIZE;
-    const startTime = Date.now();
 
     // Get Shopify access token from AWS Secrets Manager
     const accessToken = Resource.SHOPIFY_API_SECRET.value;
@@ -138,17 +132,12 @@ app.post('/', async (context) => {
 
     const { customersUpdated, errors } = updateResult;
 
-    // TODO: Delete
-    const endTime = Date.now();
-    const processingTime = `${endTime - startTime}ms`;
-
     const response: TagVipCustomersResponse = {
       success: true,
       summary: {
         totalCustomers: vipResult.totalCustomers,
         vipsIdentified: vipResult.vipCustomers.length,
         customersUpdated,
-        processingTime,
       },
       errors,
     };
