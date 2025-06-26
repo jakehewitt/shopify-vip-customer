@@ -22,13 +22,16 @@ function identifyVipCustomers(
   customers: ShopifyCustomer[],
   options: VipIdentificationOptions = { minOrderCount: VIP_MIN_ORDER_COUNT, dryRun: false },
 ): VipIdentificationResult {
-  const vipCustomers = customers.filter(
+  const vipCustomers = customers.filter((customer) => customer.numberOfOrders >= options.minOrderCount);
+
+  const customersToPromote = customers.filter(
     (customer) => customer.numberOfOrders >= options.minOrderCount && !customer.tags.includes('VIP'),
   );
 
   return {
     vipCustomers,
     totalCustomers: customers.length,
+    customersToPromote,
   };
 }
 
@@ -125,10 +128,11 @@ app.post('/', async (context) => {
       minOrderCount: VIP_MIN_ORDER_COUNT,
       dryRun,
     });
-    logger.info(`Identified ${vipResult.vipCustomers.length} VIP customers`);
+    logger.info(`Identified ${vipResult.customersToPromote.length} VIP customers to update`);
+    logger.info(`Total VIP qualified customers: ${vipResult.vipCustomers.length}`);
 
     // Process VIP updates using the dedicated function
-    const updateResult = await processVipUpdates(vipResult.vipCustomers, shopifyClient, dryRun);
+    const updateResult = await processVipUpdates(vipResult.customersToPromote, shopifyClient, dryRun);
 
     const { customersUpdated, errors } = updateResult;
 

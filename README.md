@@ -151,17 +151,14 @@ Identifies and tags VIP customers based on order count.
 
 ### **CloudWatch Dashboards**
 
-Operations Dashboard:
-
-- Service health overview
-- Error rates and success metrics
-
-Technical Dashboard:
-
-- Lambda performance metrics
-- Memory and duration trends
-- API efficiency metrics
-- Rate limiting patterns
+- Operations Dashboard:
+  - Service health overview
+  - Error rates and success metrics
+- Technical Dashboard:
+  - Lambda performance metrics
+  - Memory and duration trends
+  - API efficiency metrics
+  - Rate limiting patterns
 
 ### Alerting
 

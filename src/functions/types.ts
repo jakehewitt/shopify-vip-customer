@@ -5,6 +5,7 @@ export type ShopifyCustomer = GetCustomersQuery['customers']['edges'][0]['node']
 export interface VipIdentificationResult {
   vipCustomers: ShopifyCustomer[];
   totalCustomers: number;
+  customersToPromote: ShopifyCustomer[];
 }
 
 export interface VipIdentificationOptions {

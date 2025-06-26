@@ -37,6 +37,9 @@ describe('VIP Customer Tagging - Core Business Logic', () => {
       expect(result.vipCustomers).toHaveLength(2);
       expect(result.vipCustomers[0].id).toBe('2');
       expect(result.vipCustomers[1].id).toBe('3');
+      expect(result.customersToPromote).toHaveLength(2);
+      expect(result.customersToPromote[0].id).toBe('2');
+      expect(result.customersToPromote[1].id).toBe('3');
       expect(result.totalCustomers).toBe(4);
     });
 
@@ -49,8 +52,13 @@ describe('VIP Customer Tagging - Core Business Logic', () => {
       const options: VipIdentificationOptions = { minOrderCount: 3, dryRun: false };
       const result = identifyVipCustomers(customers, options);
 
-      expect(result.vipCustomers).toHaveLength(1);
-      expect(result.vipCustomers[0].id).toBe('2');
+      // All 3 customers qualify as VIPs (3+ orders)
+      expect(result.vipCustomers).toHaveLength(3);
+      expect(result.vipCustomers.map((c) => c.id)).toEqual(['1', '2', '3']);
+
+      // Only customer '2' needs to be promoted (doesn't have VIP tag yet)
+      expect(result.customersToPromote).toHaveLength(1);
+      expect(result.customersToPromote[0].id).toBe('2');
       expect(result.totalCustomers).toBe(3);
     });
 
@@ -62,6 +70,9 @@ describe('VIP Customer Tagging - Core Business Logic', () => {
       expect(result.vipCustomers).toHaveLength(2);
       expect(result.vipCustomers[0].id).toBe('2');
       expect(result.vipCustomers[1].id).toBe('3');
+      expect(result.customersToPromote).toHaveLength(2);
+      expect(result.customersToPromote[0].id).toBe('2');
+      expect(result.customersToPromote[1].id).toBe('3');
     });
 
     it('should handle empty customer list', () => {
